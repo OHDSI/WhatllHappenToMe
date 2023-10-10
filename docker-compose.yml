@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  whatllhappentome:
+    image: ohdsi/whatllhappentome:1.0.0
+    build:
+      context: .
+      args:
+        APP_NAME: WhatllHappenToMe
+    ports:
+      - "3838:3838"
