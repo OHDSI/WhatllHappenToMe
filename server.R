@@ -191,9 +191,14 @@ getPredictors <- function(
   @schema.covariates;
   "
   
-  result <- connectionHandler$queryDb(
-    sql, 
+  sql <- SqlRender::render(
+    sql = sql, 
     schema = schema
+    )
+  result <- DatabaseConnector::querySql(
+    connection = connectionHandler, 
+    sql = sql, 
+    snakeCaseToCamelCase = T
   )
   
   predictors <- result$covariateId
@@ -251,10 +256,16 @@ getOptions <- function(
   @schema.tars 
   ;"
   
-  result <- connectionHandler$queryDb(
-    sql, 
+  sql <- SqlRender::render(
+    sql = sql, 
     schema = schema
   )
+  result <- DatabaseConnector::querySql(
+    connection = connectionHandler, 
+    sql = sql, 
+    snakeCaseToCamelCase = T
+  )
+  
   tars <- result$tarId
   names(tars) <- paste0(
     '(',result$tarStartAnchor,' + ', result$tarStartDay,
@@ -274,10 +285,16 @@ getOptions <- function(
   on c.cohort_id = md.target_id
   ;"
   
-  result <- connectionHandler$queryDb(
-    sql, 
+  sql <- SqlRender::render(
+    sql = sql, 
     schema = schema
   )
+  result <- DatabaseConnector::querySql(
+    connection = connectionHandler, 
+    sql = sql, 
+    snakeCaseToCamelCase = T
+  )
+  
   targets <- result$cohortId
   names(targets) <- result$cohortName
   
@@ -312,11 +329,17 @@ getPrediction <- function(
   
   where md.target_id = @target_id and md.tar_id = @tar_id
   ;"
-  intercept <- connectionHandler$queryDb(
-    sql, 
+  
+  sql <- SqlRender::render(
+    sql = sql, 
     schema = schema,
     target_id = targetId,
     tar_id = tarId
+  )
+  intercept <- DatabaseConnector::querySql(
+    connection = connectionHandler, 
+    sql = sql, 
+    snakeCaseToCamelCase = T
   )
   
   # get normalised coefficients
@@ -345,11 +368,17 @@ getPrediction <- function(
   on outcome.model_id = mc.model_id
   ;
   "
-  modelCoef <- connectionHandler$queryDb(
-    sql, 
+  
+  sql <- SqlRender::render(
+    sql = sql, 
     schema = schema,
     target_id = targetId,
     tar_id = tarId
+  )
+  modelCoef <- DatabaseConnector::querySql(
+    connection = connectionHandler, 
+    sql = sql, 
+    snakeCaseToCamelCase = T
   )
   
   # join predictor df with modelCoef by covariateId
@@ -386,7 +415,7 @@ server <- function(input, output) {
     password = Sys.getenv("whatllhappentomedbPw")
   )
   
-  connectionHandler <- ResultModelManager::ConnectionHandler$new(
+  connectionHandler <- DatabaseConnector::connect(
     connectionDetails = connectionDetails
   )
   
