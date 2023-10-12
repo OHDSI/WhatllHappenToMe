@@ -20,6 +20,9 @@ RUN R -e "install.packages('shinyWidgets')"
 RUN R -e "install.packages('tippy')"
 RUN R -e "install.packages('reactable')"
 
+# download the jdbc driver
+RUN R -e "DatabaseConnector::downloadJdbcDrivers('postgresql', pathToDriver='/root')"
+
 # Set an argument for the app name
 ARG APP_NAME
 
