@@ -406,6 +406,14 @@ getPrediction <- function(
 
 server <- function(input, output) {
   
+  #set 
+  Sys.setenv(DATABASECONNECTOR_JAR_FOLDER = './drivers')
+  if(length(dir('./drivers'))==0){
+    DatabaseConnector::downloadJdbcDrivers(
+      dbms = 'postgresql'
+        )
+  }
+  
   schema <- Sys.getenv("whatllhappentomedbSchema")
   # Create connection details to results database ---------------
   connectionDetails <- DatabaseConnector::createConnectionDetails(
