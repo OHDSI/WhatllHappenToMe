@@ -179,9 +179,15 @@ withTooltip <- function(value, tooltip, ...) {
 
 # function to extract all predictors used by models
 getPredictors <- function(
-    connectionHandler,
+    connectionPool,
     schema
 ){
+  
+  connectionHandler <- pool::poolCheckout(
+    connectionPool
+  )
+  on.exit(pool::poolReturn(connectionHandler))
+  
   
   sql <- "SELECT distinct
   covariate_id,
@@ -240,9 +246,14 @@ bar_chart <- function(label, width = "100%", height = "1rem", fill = "#00bfc4", 
 }
 
 getOptions <- function(
-    connectionHandler,
+    connectionPool,
     schema = 'main'
 ){
+  
+  connectionHandler <- pool::poolCheckout(
+    connectionPool
+  )
+  on.exit(pool::poolReturn(connectionHandler))
   
   sql <- "select distinct
   tar_id, 
@@ -313,9 +324,15 @@ getPrediction <- function(
     predictorValue, 
     targetId,
     tarId,
-    connectionHandler,
+    connectionPool,
     schema = 'main'
 ){
+  
+  connectionHandler <- pool::poolCheckout(
+    connectionPool
+  )
+  on.exit(pool::poolReturn(connectionHandler))
+  
   
   # get model intercepts: model_id, intercept
   sql <- "select 
@@ -400,6 +417,9 @@ getPrediction <- function(
   prediction[is.na(prediction)] <- 0
   prediction$predictedValue <- 1/(1+exp(-prediction$value - prediction$intercept))
   
+  # order by risk
+  prediction <- prediction[order(-prediction$predictedValue),]
+  
   return(prediction)
 }
 
@@ -415,19 +435,27 @@ server <- function(input, output) {
     password = Sys.getenv("whatllhappentomedbPw")
   )
   
-  connectionHandler <- DatabaseConnector::connect(
-    connectionDetails = connectionDetails
+  #connectionHandler <- DatabaseConnector::connect(
+  #  connectionDetails = connectionDetails
+  #)
+  # using pooled connection
+  connectionPool <- pool::dbPool(
+    drv = DatabaseConnector::DatabaseConnectorDriver(),
+    dbms = "postgresql",
+    server = Sys.getenv("whatllhappentomedbServer"),
+    user = Sys.getenv("whatllhappentomedbUser"),
+    password = Sys.getenv("whatllhappentomedbPw")
   )
   
   options <- getOptions(
-    connectionHandler = connectionHandler,
+    connectionPool = connectionPool,
     schema = schema
   )
   # options$tars, options$targets
   
   # get a data.frame with the covariate names and ids
   predictors <- getPredictors(
-    connectionHandler = connectionHandler,
+    connectionPool = connectionPool,
     schema = schema
   )
   
@@ -554,7 +582,7 @@ server <- function(input, output) {
       predictorValue = predictorReactive(), 
       targetId = ifelse(is.null(inputSelected()$targetId), options$targets[1], inputSelected()$targetId),
       tarId = ifelse(is.null(inputSelected()$tarId), options$tars[1], inputSelected()$tarId), 
-      connectionHandler = connectionHandler,
+      connectionPool = connectionPool,
       schema = schema
     )
   })
